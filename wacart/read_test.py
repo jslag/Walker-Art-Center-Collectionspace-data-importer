@@ -36,8 +36,11 @@ class ObjectStuff(unittest.TestCase):
     self.assertEqual('bar', objekt['title'][1])
     self.assertEqual('Doe', agents[0]['last_name'])
     self.assertEqual('John', agents[0]['first_name'])
+    self.assertEqual('artist', agents[0]['agent_type'])
     self.assertEqual('Roe', agents[1]['last_name'])
     self.assertEqual('Jane', agents[1]['first_name'])
+    self.assertEqual('artist', agents[1]['agent_type'])
+    self.assertEqual('Roe', agents[1]['last_name'])
     self.assertEqual('1900', agents[0]['born'])
 
   def testIgnoreSpuriousRepeats(self):
@@ -59,12 +62,30 @@ class ObjectStuff(unittest.TestCase):
     self.assertEqual('Max', agents[0]['first_name'])
     self.assertEqual(1, len(agents))
 
-  def testRepeatedBirthPlace(self):
-    
+  def testArtistAuthorsAndEditor(self):
     lame_repeat = mockExport( {'birth_place':'BostonAntigua',
-    'creator_text_inverted':'Bob, Jim; Bob, Jane' })
+      'creator_text_inverted':'Bob, Jim; Bob, Jane',
+      'author':'Bennett, John; Thomas Cassidy',
+      'author_birth_year':'1975',
+      'editor':'Mekas, Jonas'})
+    objekt, agents = wacart.parse_line(lame_repeat)
+    self.assertEqual('Bob', agents[0]['last_name'])
+    self.assertEqual('Bob', agents[1]['last_name'])
+    self.assertEqual('artist', agents[0]['agent_type'])
+    self.assertEqual('Bennett', agents[2]['last_name'])
+    self.assertEqual('author', agents[2]['agent_type'])
+    self.assertEqual('1975', agents[2]['born'])
+    self.assertEqual('Cassidy', agents[3]['last_name'])
+    self.assertEqual('Mekas', agents[4]['last_name'])
+    self.assertEqual('editor', agents[4]['agent_type'])
+
+  def testRepeatedBirthPlace(self):
+    lame_repeat = mockExport( {'birth_place':'BostonAntigua',
+      'creator_text_inverted':'Bob, Jim; Bob, Jane',
+      'author':'Bennett, John; Thomas Cassidy'})
     objekt, agents = wacart.parse_line(lame_repeat)
     self.assertEqual('Boston', agents[0]['birth_place'])
+    self.assertEqual('artist', agents[0]['agent_type'])
 
   def testCleanSpuriousSpaces(self):
     """fields may have opening or trailing spaces, which we should
