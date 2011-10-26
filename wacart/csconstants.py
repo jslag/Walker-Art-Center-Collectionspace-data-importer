@@ -1,1 +1,5 @@
+CSPACE_URL = 'http://localhost:8180/cspace-services/'
+CSPACE_USER = 'admin@core.collectionspace.org'
+CSPACE_PASS = 'Administrator'
+CS_OBJECT_FILE = 'collectionspace_objects.pickle'
 WAC_OBJECTS_FILE= 'wacart_objects.pickle'
