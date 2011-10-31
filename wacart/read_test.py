@@ -5,11 +5,16 @@ import wacart
 import unittest
 
 def mockExport(fielddict):
-   fields = ['' for i in range(len(wacart.COLUMNS))]
-   for k in fielddict.keys():
-     i = wacart.COLUMNS.index(k)
-     fields[i] = fielddict[k]
-   return "\t".join(fields)
+   all_fields = []
+   mock_fields = fielddict.keys()
+   for i in range(len(wacart.COLUMNS)):
+     field = wacart.COLUMNS[i]['name']
+     if field in mock_fields:
+       print "Mock setting %s" % field
+       all_fields.append(fielddict[field])
+     else:
+       all_fields.append('')
+   return "\t".join(all_fields)
 
 class ObjectStuff(unittest.TestCase):
 
@@ -20,7 +25,7 @@ class ObjectStuff(unittest.TestCase):
        {'title':'foo', 'born':'1900', 'creator_text_inverted':'Bob, Jim'})
 
      objekt, agents = wacart.parse_line(oneLineExport)
-     self.assertEqual('foo', objekt['title'])
+     self.assertEqual(['foo'], objekt['title'])
      self.assertEqual('1900', agents[0]['born'])
 
   def testRepeats(self):
@@ -50,7 +55,7 @@ class ObjectStuff(unittest.TestCase):
     lame_repeat = mockExport( {'title':'foo',
       'creator_text_inverted':'Sprat, Max ' })
     objekt, agents = wacart.parse_line(lame_repeat)
-    self.assertEqual('foo', objekt['title'])
+    self.assertEqual(['foo'], objekt['title'])
     self.assertEqual('Sprat', agents[0]['last_name'])
     self.assertEqual(1, len(agents))
 
@@ -58,7 +63,7 @@ class ObjectStuff(unittest.TestCase):
       'creator_text_inverted':'Sprat, Max ',
       'inscription_location':'great!'})
     objekt, agents = wacart.parse_line(lamer_repeat)
-    self.assertEqual('great!', objekt['inscription_location'])
+    self.assertEqual(['great!'], objekt['inscription_location'])
     self.assertEqual('Max', agents[0]['first_name'])
     self.assertEqual(1, len(agents))
 
@@ -83,6 +88,9 @@ class ObjectStuff(unittest.TestCase):
     lame_repeat = mockExport( {'birth_place':'BostonAntigua',
       'creator_text_inverted':'Bob, Jim; Bob, Jane',
       'author':'Bennett, John; Thomas Cassidy'})
+    from pprint import pprint
+    print "lame repeat is "
+    pprint(lame_repeat)
     objekt, agents = wacart.parse_line(lame_repeat)
     self.assertEqual('Boston', agents[0]['birth_place'])
     self.assertEqual('artist', agents[0]['agent_type'])

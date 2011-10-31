@@ -11,79 +11,81 @@ import pickle
 from csconstants import *
 
 NAME_DELIMITERS = [';', ' and ']
-COLUMNS = (
- "condition", # repeat
- "condition_date", # repeat
- 'iaia_subject', # repeat
- 'running_time', # insert if 'minutes' appears, report otherwise? Note that some will be x minutes y seconds
- 'width', # repeat. will be inches internally.
- 'depth', # repeat
- 'height', # repeat
- 'dim_description', # "part" of description
- 'dimensions', # summary text
- 'weight', # repeat
- 'edition', # repeat. characters appear, but they should be joined into one string (eg. ['A/P 4/10 (edition', 'of 250, 10 A/P)']
- 'cast_no', # a few weird values
- 'signature',
- 'workshop_number', # repeat
- 'signed_location', # repeat
- 'printers_marks', # repeat
- 'foundry_marking',
- 'inscription_location', #repeat
- 'medium', # repeat
- 'support', # repeat
- 'description', # repeat
- 'sex', # repeat. some / dividing too. agent
- 'genre',
- 'iaia_style',
- 'unique_frame',
- 'frame', # repeat. could use cleanup
- 'number_of_pages',
- 'vol_no',
- 'binding',
- 'slipcase',
- 'master',
- 'submaster',
- 'portfolio', # repeat
- 'media', # might be repeat, probably schema extension 'format'
- 'related_material_location',
- "acc_no", 
- "old_acc_no",
- "lc_no",
- "object_id",
- "classification",  # heirarchical in cspace, though WAC may not need that.
- 'status', # will be CSpace schema extension, as WAC needs to repeat. 
- 'title', # repeat
- "credit_line", # repeat. this and next 3: confusing re: acquisition databases, what's canonical
- 'initial_value',
- 'initial_price', # most numbers, some more narrative
- 'current_value', # repeat. this and following 2 are connected
- 'valuation_date', # repeat
- 'valuation_source', # repeat
- 'source', # repeat. other stuff in another FM DB
- 'date', # bit more complicated. Report exceptions to JK?
- 'catalog_raisonne_ref',
- 'fabricator', # next 4 are organizations
- 'foundry', 
- 'printer', # repeat
- 'publisher', # repeat
- "editor", # agent. lots of copyright stuff though. cleanup?
- 'creator_text_inverted', # definitely prepare report here
- 'author', # agent 
- 'author_birth_year', # agent. gets turned into 'born'
- 'born', # / delimitiers. agents
- 'author_death_year', # agent. / delimiters but also full dates, so only slice \d{4}/\d{4}
- 'died', # agent
- 'author_gender',# agent
- "mnartist", # will need to do some mapping of the different yes/no values. agent
- "ethnicity", # agent. 
- "author_nationality", # agent
- 'nationality', # agent
- 'author_birth_place', # agent
- 'birth_place', # agent
- 'last_name', # ignored
- 'reproduction_rights'
- )
+
+# order important! Must match input.
+COLUMNS = [
+ {'name': "condition", 'repeat': True},
+  {'name':  "condition_date", 'repeat': True},
+  {'name':  'iaia_subject', 'repeat': True},
+  {'name':  'running_time' }, # insert if 'minutes' appears, report otherwise? Note that some will be x minutes y seconds
+  {'name':  'width', 'repeat': True}, # will be inches internally.
+  {'name':  'depth', 'repeat': True},
+  {'name':  'height', 'repeat': True},
+  {'name':  'dim_description'}, # "part" of description
+  {'name':  'dimensions'}, # summary text
+  {'name':  'weight', 'repeat': True},
+  {'name':  'edition', 'repeat': True}, # TODO repeat characters appear, but they should be joined into one string (eg. ['A/P 4/10 (edition', 'of 250, 10 A/P)']
+  {'name':  'cast_no'}, # a few weird values
+  {'name':  'signature' },
+  {'name':  'workshop_number', 'repeat': True},
+  {'name':  'signed_location', 'repeat': True},
+  {'name':  'printers_marks', 'repeat': True},
+  {'name':  'foundry_marking', },
+  {'name':  'inscription_location', 'repeat': True},
+  {'name':  'medium', 'repeat': True},
+  {'name':  'support', 'repeat': True},
+  {'name':  'description', 'repeat': True},
+  {'name':  'sex', 'repeat': True}, # some / dividing too. agent
+  {'name':  'genre'},
+  {'name':  'iaia_style'},
+  {'name':  'unique_frame'},
+  {'name':  'frame', 'repeat': True}, # TODO could use cleanup
+  {'name':  'number_of_pages'},
+  {'name':  'vol_no'},
+  {'name':  'binding'},
+  {'name':  'slipcase'},
+  {'name':  'master'},
+  {'name':  'submaster'},
+  {'name':  'portfolio', 'repeat': True},
+  {'name':  'media'}, # might be repeat, probably schema extension 'format'
+  {'name':  'related_material_location'},
+  {'name':  "acc_no"}, 
+  {'name':  "old_acc_no"},
+  {'name':  "lc_no"},
+  {'name':  "object_id"},
+  {'name':  "classification"},  # heirarchical in cspace, though WAC may not need that.
+  {'name':  'status'}, # will be CSpace schema extension, as WAC needs to repeat. 
+  {'name':  'title', 'repeat': True},
+  {'name':  "credit_line", 'repeat': True}, # this and next 3: confusing re: acquisition databases, what's canonical
+  {'name':  'initial_value'},
+  {'name':  'initial_price'}, # most numbers, some more narrative
+  {'name':  'current_value', 'repeat': True}, # this and following 2 are connected
+  {'name':  'valuation_date', 'repeat': True},
+  {'name':  'valuation_source', 'repeat': True},
+  {'name':  'source', 'repeat': True}, # other stuff in another FM DB
+  {'name':  'date'}, # bit more complicated. Report exceptions to JK?
+  {'name':  'catalog_raisonne_ref'},
+  {'name':  'fabricator'}, # next 4 are organizations
+  {'name':  'foundry'}, 
+  {'name':  'printer', 'repeat': True},
+  {'name':  'publisher', 'repeat': True},
+  {'name':  "editor"}, # agent. lots of copyright stuff though. cleanup?
+  {'name':  'creator_text_inverted'}, # definitely prepare report here
+  {'name':  'author'}, # agent 
+  {'name':  'author_birth_year'}, # agent. gets turned into 'born'
+  {'name':  'born'}, # / delimitiers. agents
+  {'name':  'author_death_year'}, # agent. / delimiters but also full dates, so only slice \d{4}/\d{4}
+  {'name':  'died'}, # agent
+  {'name':  'author_gender'}, # agent
+  {'name':  "mnartist"}, # will need to do some mapping of the different yes/no values. agent
+  {'name':  "ethnicity"}, # agent. 
+  {'name':  "author_nationality"}, # agent
+  {'name':  'nationality'}, # agent
+  {'name':  'author_birth_place'}, # agent
+  {'name':  'birth_place'}, # agent
+  {'name':  'last_name'}, # ignored
+  {'name':  'reproduction_rights'}
+ ]
 
 def parse_line(line):
   """Parses a FileMaker export of the WACArt database, returning one
@@ -99,10 +101,11 @@ def parse_line(line):
   fields = line.split("\t")
 
   for i in range(len(COLUMNS)):
-    objekt[COLUMNS[i]] = fields[i]
+    objekt[COLUMNS[i]['name']] = fields[i]
+    if COLUMNS[i].has_key('repeat'):
+      break_out_multiple_objects(COLUMNS[i]['name'], objekt)
 
   for field in objekt.keys():
-    break_out_multiple_objects(field, objekt)
     trim_extra_spaces(field, objekt)
   agents = []
   agents = break_out_agents(objekt)
@@ -139,6 +142,10 @@ def break_out_multiple_objects(field, target):
           target[field] = return_values[0]
         else:
           target[field] = return_values
+  # Wrap single values in arrays so that code down the line isn't
+  # confused
+  if type(target[field]) != type([]):
+    target[field] = [ target[field] ]
 
 def trim_extra_spaces(field, target):
   if type(target[field]) != type("") and type(target[field]) != type(u''):
@@ -379,7 +386,8 @@ if __name__ == "__main__":
       BADLINES.write("%s: %s" % (err, line))
 
     print "--------------------"
-    for field in COLUMNS:
+    for row in COLUMNS:
+      field = row['name']
       if type(objekt[field]) == type([]):
         for datum in objekt[field]:
           print "%s -- '%s'" % (field, datum)
