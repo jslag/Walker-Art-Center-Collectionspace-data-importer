@@ -56,7 +56,7 @@ REPEAT_OBJECT_FIELDS = [
   'support',
   'description',
   'sex',
-  'frame'
+  'frame',
   'portfolio',
   'media',
   'status',
@@ -98,34 +98,21 @@ def value_present(record, fieldname):
 def insert_into_cspace(record):
   """
   return 1 on success, 0 on failure
-  TODO split out at least preprocessing, which could become its own, testable method
   """
-  object_values = defaultdict(lambda: None)
-
-  for fieldname in UNARY_OBJECT_FIELDS:
-    print "looking at std field '%s'" % fieldname
-    if value_present(record, fieldname):
-      print "  it's '%s'" % record[fieldname]
-      object_values[fieldname] = record[fieldname]
-
-  for fieldname in REPEAT_OBJECT_FIELDS:
-    print "looking at repeating field '%s'" % fieldname
-    object_values[fieldname] = []
-    for element in record[fieldname]:
-      print "checking element '%s'', which is the value for '%s'" % (element, fieldname)
-      object_values[fieldname].append(element)
-      #object_values[fieldname].append(element.text)
 
   # 
   # Can't have bare ampersands. There don't seem to be any encoded
   # ampersands coming our way, so we just do a replace.
+  # TODO expand to handle other potentially invalid characters, such as
+  # the FileMaker repeat character that may sneak in anywhere
   #
-  for k in object_values.keys():
-    if type(object_values[k]) != type([]) and object_values[k] is not None:
-      object_values[k] = object_values[k].replace("&", "&amp;")
-    if type(object_values[k]) == type([]):
-      for i in range(len(object_values[k])):
-        object_values[k][i] = object_values[k][i].replace("&", "&amp;")
+  for k in record.keys():
+    if type(record[k]) == type('') and record[k] is not None:
+      record[k] = record[k].replace("&", "&amp;")
+    if type(record[k]) == type([]):
+      for i in range(len(record[k])):
+        if type(record[k][i]) == type('') and record[k][i] is not None:
+          record[k][i] = record[k][i].replace("&", "&amp;")
 
   # TODO handle creators
   """
@@ -154,7 +141,7 @@ def insert_into_cspace(record):
   # tracking more of them
   #
   concepts = []
-  for concept in object_values['iaia_subject']:
+  for concept in record['iaia_subject']:
     concepts.append("<contentConcept>%s</contentConcept>" % concept)
 
   #
@@ -174,9 +161,9 @@ def insert_into_cspace(record):
                 <collectionobjects_common:titleLanguage>eng</collectionobjects_common:titleLanguage>
             </collectionobjects_common:titleGroup>
         </collectionobjects_common:titleGroupList>
-        <collectionobjects_common:objectProductionDates>
-          <collectionobjects_common:objectProductionDate>%s</collectionobjects_common:objectProductionDate>
-        </collectionobjects_common:objectProductionDates>
+        <collectionobjects_common:objectProductionDateGroup>
+          <collectionobjects_common:dateDisplayDate>%s</collectionobjects_common:dateDisplayDate>
+        </collectionobjects_common:objectProductionDateGroup>
         <collectionobjects_common:materialGroupList>
           <collectionobjects_common:materialGroup>
             <collectionobjects_common:material>%s</collectionobjects_common:material>
@@ -204,21 +191,22 @@ def insert_into_cspace(record):
       </schema>
     </import>
   </imports>
-  ''' % (object_values['acc_no'], 
-         object_values['title'],
-         object_values['date'],
-         object_values['displayMaterialsTech'], 
+  ''' % (record['acc_no'], 
+         record['title'][0], # actually, one per title
+         record['date'],
+         'foo', #record['displayMaterialsTech'], 
          "\n".join(concepts),
-         object_values['objectWorkType'], 
-         object_values['descriptiveNote'], 
-         object_values['edition'], 
-         object_values['dimensionSummary'], 
-         object_values['inscription_location'], 
-         object_values['locationName'], 
+         "baz", #record['objectWorkType'], 
+         record['description'][0], # repeats
+         record['edition'], 
+         '2x4', #record['dimensions'], # funky repeat character possible
+         record['inscription_location'][0], # repeat
+         'bar' #record['locationName'], 
          )
 
   h = httplib2.Http()
   h.add_credentials(CSPACE_USER, CSPACE_PASS)
+  print "making POST..."
   resp, content = h.request(
     CSPACE_URL + 'imports',
     'POST',
@@ -227,17 +215,17 @@ def insert_into_cspace(record):
     )
 
   if resp['status'] == '200':
-    if object_values['title'] is None:
-      print "Inserted '%s' into collectionspace\n" % object_values['acc_no'].encode('utf-8')
+    if record['title'] is None:
+      print "Inserted '%s' into collectionspace\n" % record['acc_no'].encode('utf-8')
     else:
-      print "Inserted '%s' into collectionspace\n" % object_values['title'].encode('utf-8')
+      print "Inserted '%s' into collectionspace\n" % record['title'][0].encode('utf-8')
     return 1
   else:
-    print "\nSomething went wrong with %s:" % object_values['acc_no'].encode('utf-8')
+    print "\nSomething went wrong with %s:" % record['acc_no'].encode('utf-8')
     print "record:"
     ovd = {}
-    for key in object_values.keys():
-      ovd[key] = object_values[key]
+    for key in record.keys():
+      ovd[key] = record[key]
     pprint(ovd)
     print "Response: %s" % resp
     print "Content: %s\n" % content
