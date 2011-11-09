@@ -10,7 +10,6 @@ def mockExport(fielddict):
    for i in range(len(wacart.COLUMNS)):
      field = wacart.COLUMNS[i]['name']
      if field in mock_fields:
-       print "Mock setting %s" % field
        all_fields.append(fielddict[field])
      else:
        all_fields.append('')
@@ -83,17 +82,6 @@ class ObjectStuff(unittest.TestCase):
     self.assertEqual('Cassidy', agents[3]['last_name'])
     self.assertEqual('Mekas', agents[4]['last_name'])
     self.assertEqual('editor', agents[4]['agent_type'])
-
-  def testRepeatedBirthPlace(self):
-    lame_repeat = mockExport( {'birth_place':'BostonAntigua',
-      'creator_text_inverted':'Bob, Jim; Bob, Jane',
-      'author':'Bennett, John; Thomas Cassidy'})
-    from pprint import pprint
-    print "lame repeat is "
-    pprint(lame_repeat)
-    objekt, agents = wacart.parse_line(lame_repeat)
-    self.assertEqual('Boston', agents[0]['birth_place'])
-    self.assertEqual('artist', agents[0]['agent_type'])
 
   def testCleanSpuriousSpaces(self):
     """fields may have opening or trailing spaces, which we should

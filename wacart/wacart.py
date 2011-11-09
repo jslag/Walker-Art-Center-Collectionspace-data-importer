@@ -14,7 +14,7 @@ NAME_DELIMITERS = [';', ' and ']
 
 # order important! Must match input.
 COLUMNS = [
- {'name': "condition", 'repeat': True},
+  {'name': "condition", 'repeat': True},
   {'name':  "condition_date", 'repeat': True},
   {'name':  'iaia_subject', 'repeat': True},
   {'name':  'running_time' }, # insert if 'minutes' appears, report otherwise? Note that some will be x minutes y seconds
