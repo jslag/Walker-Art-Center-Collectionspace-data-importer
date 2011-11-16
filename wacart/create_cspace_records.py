@@ -96,10 +96,6 @@ def value_present(record, fieldname):
   else:
     return False
   
-def IMPORT(*args): 
-  '''import is a reserved word, but we need it in the lxml E-factory below'''
-  return {"import": ' '.join(args)}
-   
 def xml_from(record, concepts):
   #
   # Schema is at https://source.collectionspace.org/collection-space/src/services/tags/v1.9/services/collectionobject/jaxb/src/main/resources/collectionobjects_common.xsd
@@ -107,78 +103,60 @@ def xml_from(record, concepts):
   # updated to account for
   # http://wiki.collectionspace.org/display/collectionspace/Imports+Service+Home
   #     
+
+  #from pprint import pprint
+  #pprint(record)
   CC = ElementMaker(namespace = "http://collectionspace.org/collectionobject",
                     nsmap = {'collectionobjects_common': 
                              'http://collectionspace.org/collectionobject'})
-  included_fields = CC.titleGroupList(
-    CC.titleGroup(
-      CC.title(record['title']),
-      CC.titleLanguage('eng')
+  schema = E.schema({'name': 'collectionobjects_common'})
+  if record.has_key('acc_no'):
+    schema.append(CC.objectNumber(record['acc_no']))
+  if record.has_key('title'):
+    title_list = CC('titleGroupList')
+    for title in record['title']:
+      title_list.append(
+        CC.titleGroup(
+          CC.title(title),
+          CC.titleLanguage('eng')
+        )
+      )
+    schema.append(title_list) 
+  if record.has_key('date'):
+    schema.append(
+      CC.objectProductionDateGroup(
+        CC.dateDisplayDate(record['date'])
+      )
     )
-  )
+  if record.has_key('concepts'):
+    schema.append(CC.contentConcepts("\n".join(record['concepts'])))
+  if record.has_key('objectWorkType'):
+    work_type_list = CC('objectNameList')
+    for work_type in record['objectWorkType']:
+      description_list.append(
+        CC.objectNameGroup(
+          CC.objectName(work_type),
+          CC.objectNameCurrency('current'),
+          CC.objectNameType('classified'),
+          CC.objectNameSystem('In-house'),
+          CC.objectNameLanguage('eng')
+        )
+      )
+  if record.has_key('description'):
+    schema.append(CC.physicalDescription("\n".join(record['description'])))
+  if record.has_key('edition'):
+    schema.append(CC.editionNumber("\n".join(record['edition'])))
+  if record.has_key('inscription_location'):
+    schema.append(CC.inscriptionContent("\n".join(record['inscription_location'])))
+
   outer = E.imports(
     E('import',
-      CC.schema( included_fields),
-      {'seq': '1', 'service': 'CollectionObjects', 'type': 'CollectionObjects'}
+      schema,
+      {'seq': '1', 'service': 'CollectionObjects', 'type': 'CollectionObject'}
     )
   )
-  print etree.tostring(outer, pretty_print=True)
+  #print etree.tostring(outer, pretty_print=True)
   return etree.tostring(outer)
-
-  object_xml = u'''
-  <imports>
-    <import seq="1" service="CollectionObjects" type="CollectionObject">
-      <schema xmlns:collectionobjects_common="http://collectionspace.org/collectionobject/" name="collectionobjects_common">
-        <collectionobjects_common:objectNumber>%s</collectionobjects_common:objectNumber>
-        <collectionobjects_common:titleGroupList>
-            <collectionobjects_common:titleGroup>
-                <collectionobjects_common:title>%s</collectionobjects_common:title>
-                <collectionobjects_common:titleLanguage>eng</collectionobjects_common:titleLanguage>
-            </collectionobjects_common:titleGroup>
-        </collectionobjects_common:titleGroupList>
-        <collectionobjects_common:objectProductionDateGroup>
-          <collectionobjects_common:dateDisplayDate>%s</collectionobjects_common:dateDisplayDate>
-        </collectionobjects_common:objectProductionDateGroup>
-        <collectionobjects_common:materialGroupList>
-          <collectionobjects_common:materialGroup>
-            <collectionobjects_common:material>%s</collectionobjects_common:material>
-          </collectionobjects_common:materialGroup>
-        </collectionobjects_common:materialGroupList>
-        <collectionobjects_common:contentConcepts>
-          %s
-        </collectionobjects_common:contentConcepts>
-        <collectionobjects_common:objectNameList>
-          <collectionobjects_common:objectNameGroup>
-            <collectionobjects_common:objectName>%s</collectionobjects_common:objectName>
-            <collectionobjects_common:objectNameCurrency>current</collectionobjects_common:objectNameCurrency>
-            <collectionobjects_common:objectNameType>classified</collectionobjects_common:objectNameType>
-            <collectionobjects_common:objectNameSystem>In-house</collectionobjects_common:objectNameSystem>
-            <collectionobjects_common:objectNameLanguage>eng</collectionobjects_common:objectNameLanguage>
-          </collectionobjects_common:objectNameGroup>
-        </collectionobjects_common:objectNameList>
-        <collectionobjects_common:physicalDescription>%s</collectionobjects_common:physicalDescription>
-        <collectionobjects_common:editionNumber>%s</collectionobjects_common:editionNumber>
-        <collectionobjects_common:dimensionSummary>%s</collectionobjects_common:dimensionSummary>
-        <collectionobjects_common:inscriptionContent>%s</collectionobjects_common:inscriptionContent>
-        <collectionobjects_common:owners>
-          <collectionobjects_common:owner>%s</collectionobjects_common:owner>
-        </collectionobjects_common:owners>
-      </schema>
-    </import>
-  </imports>
-  ''' % (record['acc_no'], 
-         record['title'][0], # actually, one per title
-         record['date'],
-         'foo', #record['displayMaterialsTech'], 
-         "\n".join(concepts),
-         "baz", #record['objectWorkType'], 
-         record['description'][0], # repeats
-         record['edition'], 
-         '2x4', #record['dimensions'], # funky repeat character possible
-         record['inscription_location'][0], # repeat
-         'bar' #record['locationName'], 
-         )
-  return object_xml
 
 def insert_into_cspace(record):
   """
