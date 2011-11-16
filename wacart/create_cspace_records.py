@@ -96,7 +96,7 @@ def value_present(record, fieldname):
   else:
     return False
   
-def xml_from(record, concepts):
+def xml_from(record):
   #
   # Schema is at https://source.collectionspace.org/collection-space/src/services/tags/v1.9/services/collectionobject/jaxb/src/main/resources/collectionobjects_common.xsd
   #
@@ -128,8 +128,12 @@ def xml_from(record, concepts):
         CC.dateDisplayDate(record['date'])
       )
     )
-  if record.has_key('concepts'):
-    schema.append(CC.contentConcepts("\n".join(record['concepts'])))
+  if record.has_key('iaia_subject'):
+    concepts = CC('contentConcepts')
+    for concept in record['iaia_subject']:
+      concepts.append(CC.contentConcept(concept))
+    schema.append(concepts)
+
   if record.has_key('objectWorkType'):
     work_type_list = CC('objectNameList')
     for work_type in record['objectWorkType']:
@@ -198,16 +202,8 @@ def insert_into_cspace(record):
   #      person[field] = (element.text)
   #  creator_values.append(person)
 
-  #
-  # TODO these lines suggest that we might want to handle possibly
-  # repeating values a little more intelligently, if we end up
-  # tracking more of them
-  #
-  concepts = []
-  for concept in record['iaia_subject']:
-    concepts.append("<contentConcept>%s</contentConcept>" % concept)
 
-  object_xml = xml_from(record, concepts)
+  object_xml = xml_from(record)
 
   h = httplib2.Http()
   h.add_credentials(CSPACE_USER, CSPACE_PASS)
