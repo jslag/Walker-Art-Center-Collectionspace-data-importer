@@ -8,7 +8,9 @@ WACArt FM export, and inserts appropriate things into CSpace.
 import httplib2
 import pickle
 
-from lxml import etree
+from lxml import etree 
+from lxml.builder import E
+from lxml.builder import ElementMaker
 from collections import defaultdict
 from pprint import pprint
 from csconstants import *
@@ -94,62 +96,35 @@ def value_present(record, fieldname):
   else:
     return False
   
-
-def insert_into_cspace(record):
-  """
-  return 1 on success, 0 on failure
-  """
-
-  # 
-  # Can't have bare ampersands. There don't seem to be any encoded
-  # ampersands coming our way, so we just do a replace.
-  # TODO expand to handle other potentially invalid characters, such as
-  # the FileMaker repeat character that may sneak in anywhere
+def IMPORT(*args): 
+  '''import is a reserved word, but we need it in the lxml E-factory below'''
+  return {"import": ' '.join(args)}
+   
+def xml_from(record, concepts):
   #
-  for k in record.keys():
-    if type(record[k]) == type('') and record[k] is not None:
-      record[k] = record[k].replace("&", "&amp;")
-    if type(record[k]) == type([]):
-      for i in range(len(record[k])):
-        if type(record[k][i]) == type('') and record[k][i] is not None:
-          record[k][i] = record[k][i].replace("&", "&amp;")
-
-  # TODO handle creators
-  """
-  Need to do this for artist, author, and editor, each of which has its
-    own fields.
-  Maybe it's time for agent to be classes? Or just a hash with type in
-    [artist|author|editor]?
-  Anyhow, for each do this:
-  - see if they're in cspace already
-  - if not, insert them
-  - save away the relevant info so we can insert them into the
-    collectionobject appropriately
-  """
-  #creators = record.findall(".//{http://www.getty.edu/CDWA/CDWALite/}indexingCreatorSet")
-  #for creator in creators:
-  #  person = {}
-  #  for field in ARTIST_FIELDS:
-  #    element = record.find(".//{http://www.getty.edu/CDWA/CDWALite/}%s" % field)
-  #    if element is not None:
-  #      person[field] = (element.text)
-  #  creator_values.append(person)
-
-  #
-  # TODO these lines suggest that we might want to handle possibly
-  # repeating values a little more intelligently, if we end up
-  # tracking more of them
-  #
-  concepts = []
-  for concept in record['iaia_subject']:
-    concepts.append("<contentConcept>%s</contentConcept>" % concept)
-
-  #
-  # Schema is at https://source.collectionspace.org/collection-space/src/services/tags/v1.5/services/collectionobject/jaxb/src/main/resources/collectionobjects_common.xsd
+  # Schema is at https://source.collectionspace.org/collection-space/src/services/tags/v1.9/services/collectionobject/jaxb/src/main/resources/collectionobjects_common.xsd
   #
   # updated to account for
   # http://wiki.collectionspace.org/display/collectionspace/Imports+Service+Home
   #     
+  CC = ElementMaker(namespace = "http://collectionspace.org/collectionobject",
+                    nsmap = {'collectionobjects_common': 
+                             'http://collectionspace.org/collectionobject'})
+  included_fields = CC.titleGroupList(
+    CC.titleGroup(
+      CC.title(record['title']),
+      CC.titleLanguage('eng')
+    )
+  )
+  outer = E.imports(
+    E('import',
+      CC.schema( included_fields),
+      {'seq': '1', 'service': 'CollectionObjects', 'type': 'CollectionObjects'}
+    )
+  )
+  print etree.tostring(outer, pretty_print=True)
+  return etree.tostring(outer)
+
   object_xml = u'''
   <imports>
     <import seq="1" service="CollectionObjects" type="CollectionObject">
@@ -203,6 +178,58 @@ def insert_into_cspace(record):
          record['inscription_location'][0], # repeat
          'bar' #record['locationName'], 
          )
+  return object_xml
+
+def insert_into_cspace(record):
+  """
+  return 1 on success, 0 on failure
+  """
+
+  # 
+  # Can't have bare ampersands. There don't seem to be any encoded
+  # ampersands coming our way, so we just do a replace.
+  # TODO expand to handle other potentially invalid characters, such as
+  # the FileMaker repeat character that may sneak in anywhere
+  #
+  for k in record.keys():
+    if type(record[k]) == type('') and record[k] is not None:
+      record[k] = record[k].replace("&", "&amp;")
+    if type(record[k]) == type([]):
+      for i in range(len(record[k])):
+        if type(record[k][i]) == type('') and record[k][i] is not None:
+          record[k][i] = record[k][i].replace("&", "&amp;")
+
+  # TODO handle creators
+  """
+  Need to do this for artist, author, and editor, each of which has its
+    own fields.
+  Maybe it's time for agent to be classes? Or just a hash with type in
+    [artist|author|editor]?
+  Anyhow, for each do this:
+  - see if they're in cspace already
+  - if not, insert them
+  - save away the relevant info so we can insert them into the
+    collectionobject appropriately
+  """
+  #creators = record.findall(".//{http://www.getty.edu/CDWA/CDWALite/}indexingCreatorSet")
+  #for creator in creators:
+  #  person = {}
+  #  for field in ARTIST_FIELDS:
+  #    element = record.find(".//{http://www.getty.edu/CDWA/CDWALite/}%s" % field)
+  #    if element is not None:
+  #      person[field] = (element.text)
+  #  creator_values.append(person)
+
+  #
+  # TODO these lines suggest that we might want to handle possibly
+  # repeating values a little more intelligently, if we end up
+  # tracking more of them
+  #
+  concepts = []
+  for concept in record['iaia_subject']:
+    concepts.append("<contentConcept>%s</contentConcept>" % concept)
+
+  object_xml = xml_from(record, concepts)
 
   h = httplib2.Http()
   h.add_credentials(CSPACE_USER, CSPACE_PASS)
