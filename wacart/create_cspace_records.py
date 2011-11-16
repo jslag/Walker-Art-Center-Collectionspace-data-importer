@@ -148,8 +148,13 @@ def xml_from(record):
       )
   if record.has_key('description'):
     schema.append(CC.physicalDescription("\n".join(record['description'])))
-  if record.has_key('edition'):
-    schema.append(CC.editionNumber("\n".join(record['edition'])))
+  if record.has_key('edition') or record.has_key('cast_no'):
+    values = []
+    for key in ['edition', 'cast_no']:
+      if record.has_key(key):
+        values += record[key]
+
+    schema.append(CC.editionNumber("\n".join(values)))
   if record.has_key('inscription_location'):
     schema.append(CC.inscriptionContent("\n".join(record['inscription_location'])))
 
