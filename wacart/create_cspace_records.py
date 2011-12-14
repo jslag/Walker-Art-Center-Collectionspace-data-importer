@@ -112,9 +112,9 @@ def xml_from(record):
   WAC = ElementMaker(namespace = "http://walkerart.org/collectionobject",
                      nsmap = {'collectionobjects_wac': 
                               'http://walkerart.org/collectionobject'})
-  schema = E.schema({'name': 'collectionobjects_common'})
+  cs_schema = E.schema({'name': 'collectionobjects_common'})
   if record.has_key('acc_no'):
-    schema.append(CC.objectNumber(record['acc_no']))
+    cs_schema.append(CC.objectNumber(record['acc_no']))
   if record.has_key('title'):
     title_list = CC('titleGroupList')
     for title in record['title']:
@@ -124,9 +124,9 @@ def xml_from(record):
           CC.titleLanguage('eng')
         )
       )
-    schema.append(title_list) 
+    cs_schema.append(title_list) 
   if record.has_key('date'):
-    schema.append(
+    cs_schema.append(
       CC.objectProductionDateGroup(
         CC.dateDisplayDate(record['date'])
       )
@@ -135,7 +135,7 @@ def xml_from(record):
     concepts = CC('contentConcepts')
     for concept in record['iaia_subject']:
       concepts.append(CC.contentConcept(concept))
-    schema.append(concepts)
+    cs_schema.append(concepts)
 
   if record.has_key('objectWorkType'):
     work_type_list = CC('objectNameList')
@@ -151,42 +151,41 @@ def xml_from(record):
       )
 
   if record.has_key('description'):
-    schema.append(CC.physicalDescription("\n".join(record['description'])))
+    cs_schema.append(CC.physicalDescription("\n".join(record['description'])))
 
   if record.has_key('edition') or record.has_key('cast_no'):
     values = []
     for key in ['edition', 'cast_no']:
       if record.has_key(key):
         values += record[key]
-    schema.append(CC.editionNumber("\n".join(values)))
-
-  # 
-  # needs wac namespace 
-  #
-  if record.has_key('condition') or record.has_key('condition_date'):
-    values = []
-    for key in ['condition', 'condition_date']:
-      if record.has_key(key):
-        print "we have %s '%s'" % (key, record[key])
-        values += record[key]
-    schema.append(WAC.walkercondition("\n".join(values)))
+    cs_schema.append(CC.editionNumber("\n".join(values)))
 
   if record.has_key('inscription_location'):
-    schema.append(CC.inscriptionContent("\n".join(record['inscription_location'])))
+    cs_schema.append(CC.inscriptionContent("\n".join(record['inscription_location'])))
 
   # There's probably a class of variables that we can easily handle with
   # just a fieldname mapping; let's set that up, and then let the
   # exceptions be exceptions
 
-  # eg. condition? maybe not since it includes condition and condition_date
+  #
+  # WAC-specific
+  #
+  wac_schema = E.schema({'name': 'collectionobjects_wac'})
+  if record.has_key('condition') or record.has_key('condition_date'):
+    values = []
+    for key in ['condition', 'condition_date']:
+      if record.has_key(key):
+        values += record[key]
+    wac_schema.append(WAC.walkercondition("\n".join(values)))
 
   outer = E.imports(
     E('import',
-      schema,
+      cs_schema,
+      wac_schema,
       {'seq': '1', 'service': 'CollectionObjects', 'type': 'CollectionObject'}
     )
   )
-  print etree.tostring(outer, pretty_print=True)
+  #print etree.tostring(outer, pretty_print=True)
   return etree.tostring(outer)
 
 def insert_into_cspace(record):
