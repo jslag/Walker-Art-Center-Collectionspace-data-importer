@@ -6,7 +6,7 @@ import unittest
 
 class TestParsing(unittest.TestCase):
 
-  def testXmlBuild(self):
+  def testBasicXmlBuild(self):
      """should be able to find the object's title and author's birthdate"""
 
      simpleRecord = {'title': ['Unspeakable Test Object Of Blinding Clarity'],
@@ -16,6 +16,17 @@ class TestParsing(unittest.TestCase):
      }
      some_xml = create_cspace_records.xml_from(simpleRecord)
      self.assertTrue(some_xml.find('Clarity') > -1)
+     self.assertTrue(some_xml.find('2020.142') > -1)
+
+  def testConditionProcessing(self):
+
+     simpleRecord = {
+       'acc_no': '2020.142.2',
+       'condition_date': ['sometime in 1984']
+     }
+     some_xml = create_cspace_records.xml_from(simpleRecord)
+     self.assertTrue(some_xml.find('condition') > -1)
+     self.assertTrue(some_xml.find('1984') > -1)
      self.assertTrue(some_xml.find('2020.142') > -1)
 
 if __name__ == "__main__":

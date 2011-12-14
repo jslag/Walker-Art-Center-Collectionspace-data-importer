@@ -109,6 +109,9 @@ def xml_from(record):
   CC = ElementMaker(namespace = "http://collectionspace.org/collectionobject",
                     nsmap = {'collectionobjects_common': 
                              'http://collectionspace.org/collectionobject'})
+  WAC = ElementMaker(namespace = "http://walkerart.org/collectionobject",
+                     nsmap = {'collectionobjects_wac': 
+                              'http://walkerart.org/collectionobject'})
   schema = E.schema({'name': 'collectionobjects_common'})
   if record.has_key('acc_no'):
     schema.append(CC.objectNumber(record['acc_no']))
@@ -146,17 +149,36 @@ def xml_from(record):
           CC.objectNameLanguage('eng')
         )
       )
+
   if record.has_key('description'):
     schema.append(CC.physicalDescription("\n".join(record['description'])))
+
   if record.has_key('edition') or record.has_key('cast_no'):
     values = []
     for key in ['edition', 'cast_no']:
       if record.has_key(key):
         values += record[key]
-
     schema.append(CC.editionNumber("\n".join(values)))
+
+  # 
+  # needs wac namespace 
+  #
+  if record.has_key('condition') or record.has_key('condition_date'):
+    values = []
+    for key in ['condition', 'condition_date']:
+      if record.has_key(key):
+        print "we have %s '%s'" % (key, record[key])
+        values += record[key]
+    schema.append(WAC.walkercondition("\n".join(values)))
+
   if record.has_key('inscription_location'):
     schema.append(CC.inscriptionContent("\n".join(record['inscription_location'])))
+
+  # There's probably a class of variables that we can easily handle with
+  # just a fieldname mapping; let's set that up, and then let the
+  # exceptions be exceptions
+
+  # eg. condition? maybe not since it includes condition and condition_date
 
   outer = E.imports(
     E('import',
@@ -164,7 +186,7 @@ def xml_from(record):
       {'seq': '1', 'service': 'CollectionObjects', 'type': 'CollectionObject'}
     )
   )
-  #print etree.tostring(outer, pretty_print=True)
+  print etree.tostring(outer, pretty_print=True)
   return etree.tostring(outer)
 
 def insert_into_cspace(record):
@@ -225,6 +247,7 @@ def insert_into_cspace(record):
       print "Inserted '%s' into collectionspace\n" % record['acc_no'].encode('utf-8')
     else:
       print "Inserted '%s' into collectionspace\n" % record['title'][0].encode('utf-8')
+    raise RuntimeError('one is fine for now')
     return 1
   else:
     print "\nSomething went wrong with %s:" % record['acc_no'].encode('utf-8')
