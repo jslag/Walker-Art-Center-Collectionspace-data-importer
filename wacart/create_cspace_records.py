@@ -246,7 +246,6 @@ def insert_into_cspace(record):
       print "Inserted '%s' into collectionspace\n" % record['acc_no'].encode('utf-8')
     else:
       print "Inserted '%s' into collectionspace\n" % record['title'][0].encode('utf-8')
-    raise RuntimeError('one is fine for now')
     return 1
   else:
     print "\nSomething went wrong with %s:" % record['acc_no'].encode('utf-8')
