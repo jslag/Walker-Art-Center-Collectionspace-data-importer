@@ -18,14 +18,18 @@ def mockExport(fielddict):
 class ObjectStuff(unittest.TestCase):
 
   def testSomeFields(self):
-     """should be able to find the object's title and author's birthdate"""
+     """should be able to find the object's title and author's
+     birthdate. Should not pass empty values."""
 
      oneLineExport = mockExport(
-       {'title':'foo', 'born':'1900', 'creator_text_inverted':'Bob, Jim'})
+       {'title':'foo', 'born':'1900', 
+        'creator_text_inverted':'Bob, Jim',
+        'running_time': ''})
 
      objekt, agents = wacart.parse_line(oneLineExport)
      self.assertEqual(['foo'], objekt['title'])
      self.assertEqual('1900', agents[0]['born'])
+     self.assertEqual(False, objekt.has_key('running_time'))
 
   def testRepeats(self):
     """Some works have multiple titles, measurements, etc. And there can

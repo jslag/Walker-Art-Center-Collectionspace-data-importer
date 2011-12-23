@@ -101,9 +101,10 @@ def parse_line(line):
   fields = line.split("\t")
 
   for i in range(len(COLUMNS)):
-    objekt[COLUMNS[i]['name']] = fields[i]
-    if COLUMNS[i].has_key('repeat'):
-      break_out_multiple_objects(COLUMNS[i]['name'], objekt)
+    if re.match(r'.*\w.*', fields[i]):
+      objekt[COLUMNS[i]['name']] = fields[i]
+      if COLUMNS[i].has_key('repeat'):
+        break_out_multiple_objects(COLUMNS[i]['name'], objekt)
 
   for field in objekt.keys():
     trim_extra_spaces(field, objekt)
