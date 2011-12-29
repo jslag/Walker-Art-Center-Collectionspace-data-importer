@@ -197,6 +197,6 @@ class ObjectStuff(unittest.TestCase):
     namestring7 = "von Smith, Bob"
     self.assertEqual("von Smith", wacart.guess_name_order(namestring7)['last_name'])
     self.assertEqual("Bob", wacart.guess_name_order(namestring7)['first_name'])
-  
+
 if __name__ == "__main__":
     unittest.main()   

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vim: set fileencoding=utf-8 :
 
 """
 Reads a FileMaker export of the WACART database, saves python data
@@ -6,8 +7,9 @@ structures thereof.
 
 """
 
+import codecs
+import json
 import re
-import pickle
 from csconstants import *
 
 NAME_DELIMITERS = [';', ' and ']
@@ -95,7 +97,7 @@ def parse_line(line):
   # 
   # FileMaker gives us OS 9-era output.
   #
-  line = line.decode('mac-roman').encode('utf-8')
+  line = line.decode('mac-roman')
 
   objekt = {}
   fields = line.split("\t")
@@ -132,7 +134,7 @@ def break_out_multiple_objects(field, target):
   # object in question could already be a list. Assume that a given
   # field will only have one type of delimiters.
   for delimiter in ["", ""]:
-    if type(target[field]) == type(""):
+    if type(target[field]) != type([]):
       if target[field].find(delimiter) > -1:
         all_values = target[field].split(delimiter)
         return_values = []
@@ -242,8 +244,9 @@ def break_out_agents(agentdict):
         if len(artists) > i:
           artists[i][field] = agentdict[field][i]
         else:
-          print "This record has a birth place / sex that is perplexing: %s %s, from %s" \
+          errah = "This record has a birth place / sex that is perplexing: %s %s, from %s" \
             % (field, agentdict[field], agentdict['creator_text_inverted'])
+          print errah.encode('utf-8')
       
   # These fields rarely, if ever, repeat
   for field in ['died', 'ethnicity', 'nationality']:
@@ -346,33 +349,35 @@ def note_oddities(objekt):
       if agent.has_key('last_name') and agent['last_name'].find(prob) > -1:
         weird_name = True
 
-  if weird_name:
-    AGENTS.write("for object %s, we parsed '%s' as:\n" % (objekt['object_id'], objekt['creator_text_inverted']))
-    for agent in objekt['agents']:
-      for field in ['first_name', 'middle_name', 'last_name']:
-        if agent.has_key(field):
-          AGENTS.write("  %s: %s\n" % (field, agent[field]))
-          if field == 'last_name':
-            AGENTS.write("\n")
+  #if weird_name:
+  #  AGENTS.write("for object %s, we parsed '%s' as:\n" % (objekt['object_id'], objekt['creator_text_inverted']))
+  #  for agent in objekt['agents']:
+  #    for field in ['first_name', 'middle_name', 'last_name']:
+  #      if agent.has_key(field):
+  #        AGENTS.write("  %s: %s\n" % (field, agent[field]))
+  #        if field == 'last_name':
+  #          AGENTS.write("\n")
 
-  if type(objekt['running_time']) == type(''):
+  if objekt.has_key('running_time') and type(objekt['running_time']) == type(''):
     if objekt['running_time'] != '' and objekt['running_time'].find('inute') < 0:
       RUNTIME.write("%s: %s\n" % (objekt['object_id'], objekt['running_time']))
 
-  match = re.search(r'\d', objekt['ethnicity'])
-  if match is not None:
-    ETHNICITY.write("%s: %s\n" % (objekt['object_id'], objekt['ethnicity']))
+  if objekt.has_key('ethnicity'):
+    match = re.search(r'\d', objekt['ethnicity'])
+    if match is not None:
+      ETHNICITY.write("%s: %s\n" % (objekt['object_id'], objekt['ethnicity']))
 
   understood_frames = ['Artist Specified Framing', 'Yes', 'yes', 'No',
     'no', 'No Frame', 'Unique Frame', 'Frame', ['no', 'No Frame'],
     ['yes', 'Frame'], ['Yes', 'Frame'], ['No', 'No Frame'], ['N.A.',
     'No Frame'], ['Frame', 'Artist Specified Framing']]
-  if objekt['frame'] != '' and not objekt['frame'] in understood_frames:
+  if objekt.has_key('frame') and not objekt['frame'] in understood_frames:
     FRAME.write("%s: %s\n" % (objekt['object_id'], objekt['frame']))
 
-  match = re.search(r'the undersigned', objekt['editor'])
-  if match is not None:
-    EDITORS.write("%s: %s\n" % (objekt['object_id'], objekt['editor']))
+  if objekt.has_key('editor'):
+    match = re.search(r'the undersigned', objekt['editor'])
+    if match is not None:
+      EDITORS.write("%s: %s\n" % (objekt['object_id'], objekt['editor']))
 
 if __name__ == "__main__":
   TABFILE = open('wacart.tab')
@@ -381,31 +386,30 @@ if __name__ == "__main__":
   objects = []
 
   for line in TABFILE:
-    try:
-      objekt, agents = parse_line(line)
-    except ValueError as err:
-      BADLINES.write("%s: %s" % (err, line))
-
+    objekt, agents = parse_line(line)
     print "--------------------"
     for row in COLUMNS:
       field = row['name']
-      if type(objekt[field]) == type([]):
-        for datum in objekt[field]:
-          print "%s -- '%s'" % (field, datum)
-      else:
-        print "%s -- '%s'" % (field, objekt[field])
+      if objekt.has_key(field):
+        if type(objekt[field]) == type([]):
+          for datum in objekt[field]:
+            debug = "%s -- '%s'" % (field, datum)
+            print debug.encode('utf-8')
+        else:
+          debug = "%s -- '%s'" % (field, objekt[field])
+          print debug.encode('utf-8')
     print "--------------------"
     print "Agent details:"
     for agent in agents:
       for field in agent.keys():
-        print "%s -- '%s'" % (field,  agent[field])
+        debug = "%s -- '%s'" % (field, agent[field])
+        print debug.encode('utf-8')
     objekt['agents'] = agents
     objects.append(objekt)
-
     note_oddities(objekt)
 
   TABFILE.close()
 
-  output = open(WAC_OBJECTS_FILE, 'wb')
-  pickle.dump(objects, output)
+  output = codecs.open(WAC_OBJECTS_FILE, 'w', 'utf-8')
+  json.dump(objects, output, ensure_ascii=False)
   output.close()

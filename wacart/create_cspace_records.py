@@ -1,12 +1,15 @@
 #!/usr/bin/env python
+# vim: set fileencoding=utf-8 :
 
 """
 Reads the pickle files of records in CSpace and of records from the
 WACArt FM export, and inserts appropriate things into CSpace.
 """
 
+import codecs
+import cPickle
 import httplib2
-import pickle
+import json
 
 from lxml import etree 
 from lxml.builder import E
@@ -160,8 +163,24 @@ def xml_from(record):
         values += record[key]
     cs_schema.append(CC.editionNumber("\n".join(values)))
 
+  # Actually, inscriptionContent could also include signature, workshop
+  # number, signed/location, and printer's marks. Only one field to jam
+  # them in.
   if record.has_key('inscription_location'):
     cs_schema.append(CC.inscriptionContent("\n".join(record['inscription_location'])))
+
+  if record.has_key('running_time'):
+    cs_schema.append(
+        CC.dimensions(
+          CC.dimensionList(
+            CC.dimensionGroup(
+              CC.value(record['running_time']),
+              CC.measurementUnit('minutes'),
+              CC.dimension('running-time')
+              )
+            )
+          )
+        )
 
   # There's probably a class of variables that we can easily handle with
   # just a fieldname mapping; let's set that up, and then let the
@@ -198,6 +217,7 @@ def insert_into_cspace(record):
   # ampersands coming our way, so we just do a replace.
   # TODO expand to handle other potentially invalid characters, such as
   # the FileMaker repeat character that may sneak in anywhere
+  # Maybe handle this in the parsing stage?
   #
   for k in record.keys():
     if type(record[k]) == type('') and record[k] is not None:
@@ -260,14 +280,14 @@ def insert_into_cspace(record):
 
 def load_cspace_objectids():
   pickle_file = open(CS_OBJECT_FILE, 'rb')
-  cobjects = pickle.load(pickle_file)
+  cobjects = cPickle.load(pickle_file)
   pickle_file.close()
   return cobjects
 
-def load_wacart_objectids():
-  pickle_file = open(WAC_OBJECTS_FILE, 'rb')
-  cobjects = pickle.load(pickle_file)
-  pickle_file.close()
+def load_wacart_objects():
+  jfile = codecs.open(WAC_OBJECTS_FILE, 'r', 'utf-8')
+  cobjects = json.load(jfile)
+  jfile.close()
   return cobjects
 
 def prune_existing_records(objects, existing_objectids):
@@ -291,7 +311,7 @@ def split_records_by_artist_count(records):
 if __name__ == "__main__":
   existing_cspace_records = load_cspace_objectids()
   print "existing records loaded"
-  wacart_records = load_wacart_objectids()
+  wacart_records = load_wacart_objects()
   print "records to insert loaded"
   records_to_create = prune_existing_records(wacart_records, existing_cspace_records)
   print "records pruned"

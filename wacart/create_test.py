@@ -29,5 +29,17 @@ class TestParsing(unittest.TestCase):
      self.assertTrue(some_xml.find('1984') > -1)
      self.assertTrue(some_xml.find('2020.142') > -1)
 
+  def testDimensions(self): 
+     simpleRecord = {
+       'acc_no': '2020.142.2',
+       'condition_date': ['sometime in 1984'],
+       'running_time': '234'
+     }
+     some_xml = create_cspace_records.xml_from(simpleRecord)
+     self.assertTrue(some_xml.find('dimension') > -1)
+     self.assertTrue(some_xml.find('minutes') > -1)
+
+     # then try a combo, eg. width and depth
+
 if __name__ == "__main__":
     unittest.main()   
