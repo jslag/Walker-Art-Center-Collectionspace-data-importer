@@ -70,6 +70,14 @@ class ObjectStuff(unittest.TestCase):
     self.assertEqual('Max', agents[0]['first_name'])
     self.assertEqual(1, len(agents))
 
+    lamest_repeat = mockExport( {'title':'foo',
+      'creator_text_inverted':'Sprat, Max ',
+      'inscription_location':'great!bad.'})
+    objekt, agents = wacart.parse_line(lamest_repeat)
+    self.assertEqual(['great!','bad.'], objekt['inscription_location'])
+    self.assertEqual('Max', agents[0]['first_name'])
+    self.assertEqual(1, len(agents))
+
   def testArtistAuthorsAndEditor(self):
     lame_repeat = mockExport( {'birth_place':'BostonAntigua',
       'creator_text_inverted':'Bob, Jim; Bob, Jane',

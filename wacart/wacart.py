@@ -131,24 +131,35 @@ def break_out_multiple_objects(field, target):
   appropriately"""
 
   # Due to multiple possible delimeters in the export from FM, the
-  # object in question could already be a list. Assume that a given
-  # field will only have one type of delimiters.
+  # object in question could already be a list. 
+  # Cannot assume that a given field will only have one type of delimiters.
   for delimiter in ["", ""]:
     if type(target[field]) != type([]):
-      if target[field].find(delimiter) > -1:
-        all_values = target[field].split(delimiter)
-        return_values = []
-        for i in range(len(all_values)):
-          if not just_space(all_values[i]):
-            return_values.append(all_values[i])
-        if len(return_values) == 1:
-          target[field] = return_values[0]
-        else:
-          target[field] = return_values
+      target[field] = break_on_delimeter(target[field], delimiter)
+    else:
+      accumulator = []
+      for value in target[field]:
+        accumulator += break_on_delimeter(value, delimiter)
+      target[field] = accumulator
+
   # Wrap single values in arrays so that code down the line isn't
   # confused
   if type(target[field]) != type([]):
     target[field] = [ target[field] ]
+
+def break_on_delimeter(string, delimiter):
+  if string.find(delimiter) > -1:
+    all_values = string.split(delimiter)
+    return_values = []
+    for i in range(len(all_values)):
+      if not just_space(all_values[i]):
+        return_values.append(all_values[i])
+    if len(return_values) == 1:
+      return return_values[0]
+    else:
+      return return_values
+  else:
+    return [string]
 
 def trim_extra_spaces(field, target):
   if type(target[field]) != type("") and type(target[field]) != type(u''):
